@@ -121,7 +121,8 @@ SELECT user_login, user_email FROM wp_users;
 说明：USE 切换数据库，SELECT 查询用户表中的登录名和邮箱字段。
 
 ### 14 重置 WordPress 管理员密码
-## 七.命令速查表
+
+### 七.命令速查表
 
 | 命令 | 作用 |
 | :--- | :--- |
@@ -142,7 +143,7 @@ SELECT user_login, user_email FROM wp_users;
 | `bt status` | 查看宝塔面板状态 |
 | `bt default` | 查看宝塔面板登录信息 |
 
-## 八、操作记录总结
+### 八.操作记录总结
 
 | 序号 | 操作内容 | 涉及 Linux 命令/工具 |
 | :--- | :--- | :--- |
