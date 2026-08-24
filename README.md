@@ -58,12 +58,11 @@
 ```bash
 if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_panel.sh;else wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh;fi;bash install_panel.sh ed8484bec
 收获：掌握了云服务器购买流程、安全组配置、远程连接方式（SSH / VNC）
+           
 
-
-### 阶段三:搭建网站运行环境（宝塔面板 + LNMP）
+### 阶段三: 搭建网站运行环境（宝塔面板 + LNMP）
 
 **状态：** ✅ 已完成
-
 1. 登录宝塔面板（访问 `https://IP:11908`）
 2. 在“软件商店”一键安装 **LNMP 环境**（Nginx + MySQL + PHP）
 3. 由于初始服务器内存较小（0.5 GiB），编译安装 PHP 时多次卡死
