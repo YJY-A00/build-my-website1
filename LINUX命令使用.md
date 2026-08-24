@@ -113,7 +113,6 @@ define('DB_HOST', 'localhost');
 
 ### 14. 重置 WordPress 管理员密码
 
-
 - 命令：
 ```sql
 USE wordpress;
