@@ -114,14 +114,94 @@ define('DB_HOST', 'localhost');
 ### 13. 进入数据库并查看用户
 
 - 命令：
-```sql
+sql
 USE wordpress;
 SELECT user_login, user_email FROM wp_users;
 说明：USE 切换数据库，SELECT 查询用户表中的登录名和邮箱字段。
 
 14. 重置 WordPress 管理员密码
 sql
-复制
 UPDATE wp_users SET user_pass = MD5('123456') WHERE user_login = 'admin';
 说明：UPDATE 更新数据，SET 设置新值，MD5() 是 MySQL 的加密函数。
 结果：Query OK, 1 row affected，密码已重置为 123456
+
+15. 退出 MySQL
+sql
+EXIT;
+说明：退出 MySQL 命令行界面，回到 Linux Shell。
+
+### 五、文件与目录操作
+16. 查找 WordPress 配置文件
+bash
+find / -name "wp-config.php" 2>/dev/null
+说明：find 从根目录 / 开始搜索，-name 按文件名匹配，2>/dev/null 将错误输出重定向到空设备（屏蔽权限错误提示）。
+
+结果：
+bash
+/www/wwwroot/wordpress/wp-config.php
+
+17. 查看文件内容
+bash
+cat /www/wwwroot/wordpress/wp-config.php
+说明：完整查看 WordPress 配置文件内容，确认数据库连接信息。
+
+### 六、服务器状态管理
+18. 查看服务器是否卡死
+现象：VNC 黑屏，按任意键无反应，系统报错：
+
+bash
+INFO: task kcompactd0:32 blocked for more than 120 seconds
+排查：执行 top 和 free -h 查看资源占用，发现内存耗尽。
+
+处理方式：在阿里云控制台点击“重启”或“停止再启动”，强制恢复。
+
+19. 查看服务端口监听状态
+bash
+netstat -tlnp | grep 80
+说明：netstat 查看网络连接状态，-tlnp 显示 TCP 端口监听情况，grep 80 过滤 80 端口。
+
+作用：确认 Nginx/Apache Web 服务是否正常运行。
+
+## Linux 命令速查表
+
+| 命令 | 作用 |
+| :--- | :--- |
+| `ssh root@IP` | SSH 远程连接 Linux 服务器 |
+| `sudo -i` | 切换到 root 用户 |
+| `top` | 查看系统进程和资源占用 |
+| `free -h` | 查看内存使用情况 |
+| `ps aux` | 查看所有进程 |
+| `find / -name "文件名"` | 从根目录搜索文件 |
+| `cat 文件路径` | 查看文件内容 |
+| `grep 关键词` | 过滤文本输出 |
+| `apt update` | 更新软件包列表 |
+| `apt install 软件名` | 安装软件 |
+| `mysql -u root -p` | 登录 MySQL |
+| `netstat -tlnp` | 查看端口监听 |
+| `bt start` | 启动宝塔面板 |
+| `bt restart` | 重启宝塔面板 |
+| `bt status` | 查看宝塔面板状态 |
+| `bt default` | 查看宝塔面板登录信息 |
+
+## 操作记录总结
+
+| 序号 | 操作内容 | 涉及 Linux 命令/工具 |
+| :--- | :--- | :--- |
+| 1 | SSH 远程连接（失败，改用 VNC） | `ssh` |
+| 2 | VNC 管理终端登录 | — |
+| 3 | 切换到 root 用户 | `sudo -i` |
+| 4 | 查看系统资源占用 | `top`、`free`、`ps` |
+| 5 | 安装宝塔面板 | `curl`、`wget`、`bash` |
+| 6 | 查看宝塔面板登录信息 | `bt default` |
+| 7 | 启动宝塔面板服务 | `bt start` |
+| 8 | 编译安装 PHP（卡死，失败） | — |
+| 9 | 内存耗尽排查与诊断 | `top`、`free -h` |
+| 10 | 升级内存至 1 GiB + 改用极速安装 | — |
+| 11 | 清理系统缓存 | `apt clean`、`apt autoremove` |
+| 12 | 查看 WordPress 数据库配置 | `cat`、`grep` |
+| 13 | 登录 MySQL | `mysql` |
+| 14 | 进入数据库并查看用户表 | `USE`、`SELECT` |
+| 15 | 重置管理员密码 | `UPDATE`、`MD5()` |
+| 16 | 搜索 WordPress 配置文件 | `find` |
+| 17 | 服务器强制重启 | 阿里云控制台 |
+| 18 | 查看端口监听状态 | `netstat`、`grep` |
