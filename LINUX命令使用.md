@@ -111,7 +111,7 @@ define('DB_HOST', 'localhost');
 - 命令：`mysql -u root -p`
 - 说明：`mysql` 是 MySQL 的命令行客户端，`-u` 指定用户名，`-p` 提示输入密码。
 
-### 14. 重置 WordPress 管理员密码
+### 13. 进入数据库并查看用户
 
 - 命令：
 ```sql
@@ -119,22 +119,9 @@ USE wordpress;
 SELECT user_login, user_email FROM wp_users;
 说明：USE 切换数据库，SELECT 查询用户表中的登录名和邮箱字段。
 
-
-# 九、技术收获
-1、通过本次 Linux 环境下的建站实践，掌握了以下技能：
-
-2、Linux 基础命令：cd、ls、cat、grep、find、ps、top、free
-
-3、远程管理：SSH 连接、VNC 管理终端
-
-4、用户权限管理：sudo -i 切换 root 用户
-
-5、包管理工具：apt 安装、更新、清理软件包
-
-6、MySQL 数据库操作：USE、SELECT、UPDATE、EXIT
-
-7、服务器故障排查：内存耗尽诊断、top 进程分析
-
-8、Linux 进程管理：ps aux 查看进程，grep 过滤
-
-9、服务器重启与恢复：控制台重启、停止再启动
+14. 重置 WordPress 管理员密码
+sql
+复制
+UPDATE wp_users SET user_pass = MD5('123456') WHERE user_login = 'admin';
+说明：UPDATE 更新数据，SET 设置新值，MD5() 是 MySQL 的加密函数。
+结果：Query OK, 1 row affected，密码已重置为 123456
