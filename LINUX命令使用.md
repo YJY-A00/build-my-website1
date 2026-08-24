@@ -120,50 +120,6 @@ SELECT user_login, user_email FROM wp_users;
 说明：USE 切换数据库，SELECT 查询用户表中的登录名和邮箱字段。
 
 
-### 七.命令速查表
-
-| 命令 | 作用 |
-| :--- | :--- |
-| `ssh root@IP` | SSH 远程连接 Linux 服务器 |
-| `sudo -i` | 切换到 root 用户 |
-| `top` | 查看系统进程和资源占用 |
-| `free -h` | 查看内存使用情况 |
-| `ps aux` | 查看所有进程 |
-| `find / -name "文件名"` | 从根目录搜索文件 |
-| `cat 文件路径` | 查看文件内容 |
-| `grep 关键词` | 过滤文本输出 |
-| `apt update` | 更新软件包列表 |
-| `apt install 软件名` | 安装软件 |
-| `mysql -u root -p` | 登录 MySQL |
-| `netstat -tlnp` | 查看端口监听 |
-| `bt start` | 启动宝塔面板 |
-| `bt restart` | 重启宝塔面板 |
-| `bt status` | 查看宝塔面板状态 |
-| `bt default` | 查看宝塔面板登录信息 |
-
-### 八.操作记录总结
-
-| 序号 | 操作内容 | 涉及 Linux 命令/工具 |
-| :--- | :--- | :--- |
-| 1 | SSH 远程连接（失败，改用 VNC） | `ssh` |
-| 2 | VNC 管理终端登录 | — |
-| 3 | 切换到 root 用户 | `sudo -i` |
-| 4 | 查看系统资源占用 | `top`、`free`、`ps` |
-| 5 | 安装宝塔面板 | `curl`、`wget`、`bash` |
-| 6 | 查看宝塔面板登录信息 | `bt default` |
-| 7 | 启动宝塔面板服务 | `bt start` |
-| 8 | 编译安装 PHP（卡死，失败） | — |
-| 9 | 内存耗尽排查与诊断 | `top`、`free -h` |
-| 10 | 升级内存至 1 GiB + 改用极速安装 | — |
-| 11 | 清理系统缓存 | `apt clean`、`apt autoremove` |
-| 12 | 查看 WordPress 数据库配置 | `cat`、`grep` |
-| 13 | 登录 MySQL | `mysql` |
-| 14 | 进入数据库并查看用户表 | `USE`、`SELECT` |
-| 15 | 重置管理员密码 | `UPDATE`、`MD5()` |
-| 16 | 搜索 WordPress 配置文件 | `find` |
-| 17 | 服务器强制重启 | 阿里云控制台 |
-| 18 | 查看端口监听状态 | `netstat`、`grep` |
-
 # 九、技术收获
 1、通过本次 Linux 环境下的建站实践，掌握了以下技能：
 
