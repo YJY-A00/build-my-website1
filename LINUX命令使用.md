@@ -156,7 +156,6 @@ cat /www/wwwroot/wordpress/wp-config.php
 bash
 INFO: task kcompactd0:32 blocked for more than 120 seconds
 排查：执行 top 和 free -h 查看资源占用，发现内存耗尽。
-
 处理方式：在阿里云控制台点击“重启”或“停止再启动”，强制恢复。
 
 19. 查看服务端口监听状态
