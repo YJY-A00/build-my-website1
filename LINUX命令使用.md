@@ -120,18 +120,21 @@ SELECT user_login, user_email FROM wp_users;
 说明：USE 切换数据库，SELECT 查询用户表中的登录名和邮箱字段。
 
 14. 重置 WordPress 管理员密码
+- 命令：
 sql
 UPDATE wp_users SET user_pass = MD5('123456') WHERE user_login = 'admin';
 说明：UPDATE 更新数据，SET 设置新值，MD5() 是 MySQL 的加密函数。
 结果：Query OK, 1 row affected，密码已重置为 123456
 
 15. 退出 MySQL
+- 命令：
 sql
 EXIT;
 说明：退出 MySQL 命令行界面，回到 Linux Shell。
 
 ### 五、文件与目录操作
 16. 查找 WordPress 配置文件
+- 命令：
 bash
 find / -name "wp-config.php" 2>/dev/null
 说明：find 从根目录 / 开始搜索，-name 按文件名匹配，2>/dev/null 将错误输出重定向到空设备（屏蔽权限错误提示）。
@@ -141,6 +144,7 @@ bash
 /www/wwwroot/wordpress/wp-config.php
 
 17. 查看文件内容
+- 命令：
 bash
 cat /www/wwwroot/wordpress/wp-config.php
 说明：完整查看 WordPress 配置文件内容，确认数据库连接信息。
@@ -148,7 +152,7 @@ cat /www/wwwroot/wordpress/wp-config.php
 ### 六、服务器状态管理
 18. 查看服务器是否卡死
 现象：VNC 黑屏，按任意键无反应，系统报错：
-
+- 命令：
 bash
 INFO: task kcompactd0:32 blocked for more than 120 seconds
 排查：执行 top 和 free -h 查看资源占用，发现内存耗尽。
@@ -156,6 +160,7 @@ INFO: task kcompactd0:32 blocked for more than 120 seconds
 处理方式：在阿里云控制台点击“重启”或“停止再启动”，强制恢复。
 
 19. 查看服务端口监听状态
+- 命令：
 bash
 netstat -tlnp | grep 80
 说明：netstat 查看网络连接状态，-tlnp 显示 TCP 端口监听情况，grep 80 过滤 80 端口。
@@ -205,3 +210,18 @@ netstat -tlnp | grep 80
 | 16 | 搜索 WordPress 配置文件 | `find` |
 | 17 | 服务器强制重启 | 阿里云控制台 |
 | 18 | 查看端口监听状态 | `netstat`、`grep` |
+
+## 九、技术收获
+
+通过本次 Linux 环境下的建站实践，掌握了以下技能：
+
+| 序号 | 技能方向 | 具体内容 |
+| :--- | :--- | :--- |
+| 1 | Linux 基础命令 | `cd`、`ls`、`cat`、`grep`、`find`、`ps`、`top`、`free` |
+| 2 | 远程管理 | SSH 连接、VNC 管理终端 |
+| 3 | 用户权限管理 | `sudo -i` 切换 root 用户 |
+| 4 | 包管理工具 | `apt` 安装、更新、清理软件包 |
+| 5 | MySQL 数据库操作 | `USE`、`SELECT`、`UPDATE`、`EXIT` |
+| 6 | 服务器故障排查 | 内存耗尽诊断、`top` 进程分析 |
+| 7 | 进程管理 | `ps aux` 查看进程，`grep` 过滤 |
+| 8 | 服务器重启与恢复 | 控制台重启、停止再启动 |
