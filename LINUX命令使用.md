@@ -120,7 +120,7 @@ USE wordpress;
 SELECT user_login, user_email FROM wp_users;
 说明：USE 切换数据库，SELECT 查询用户表中的登录名和邮箱字段。
 
-### 14 重置 WordPress 管理员密码
+
 
 ### 七.命令速查表
 
