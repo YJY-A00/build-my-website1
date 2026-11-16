@@ -32,7 +32,6 @@
 
 以下是我从零开始，一步步完成的所有操作。
 
-
 ### 阶段一：域名购买
 
 **状态：✅ 已完成**
@@ -42,7 +41,6 @@
 3. 购买后在 DNS 设置中添加 **A 记录**，指向后续购买的服务器 IP
 
 > **收获**：了解了域名注册流程、DNS 解析原理（A 记录、CNAME 记录的区别）
-
 
 ### 阶段二：服务器购买与配置
 
@@ -57,12 +55,14 @@
 
 ```bash
 if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_panel.sh;else wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh;fi;bash install_panel.sh ed8484bec
-收获：掌握了云服务器购买流程、安全组配置、远程连接方式（SSH / VNC）
-           
+```
 
-### 阶段三: 搭建网站运行环境（宝塔面板 + LNMP）
+> **收获**：掌握了云服务器购买流程、安全组配置、远程连接方式（SSH / VNC）
+
+### 阶段三：搭建网站运行环境（宝塔面板 + LNMP）
 
 **状态：** ✅ 已完成
+
 1. 登录宝塔面板（访问 `https://IP:11908`）
 2. 在“软件商店”一键安装 **LNMP 环境**（Nginx + MySQL + PHP）
 3. 由于初始服务器内存较小（0.5 GiB），编译安装 PHP 时多次卡死
@@ -70,7 +70,6 @@ if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_pa
 5. 改用 **“极速安装”**（预编译包），而非“编译安装”
 
 > **收获**：理解了编译安装与极速安装的区别，学会了用 `top` / `free` / `ps aux` 命令排查资源瓶颈
-
 
 ### 阶段四：创建站点并部署 WordPress（Docker 方式）
 
@@ -83,7 +82,6 @@ if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_pa
 
 > **收获**：学会了宝塔面板的站点管理、Docker 应用的部署流程，理解了端口映射和域名绑定的概念
 
-
 ### 阶段五：域名解析配置
 
 **状态：** ✅ 已完成
@@ -94,7 +92,6 @@ if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_pa
 
 > **收获**：完整实践了“域名 → DNS → 服务器 → 站点”的全链路解析过程
 
-
 ### 阶段六：当前进度
 
 **状态：** ⏳ 进行中
@@ -104,3 +101,12 @@ if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_pa
 3. 服务器节点为新加坡，国内访问偶有延迟，后续可考虑迁至香港
 
 > **收获**：明确了后续优化方向，对网站从搭建到上线的完整流程有了整体认知
+
+---
+
+## 📚 Go + MySQL + Nginx 部署记录
+
+本仓库还整理了独立的 Go 网站部署实践。它与上面的 WordPress + 宝塔面板部署记录属于不同的部署方案，请按对应文档阅读，不要混为同一套环境。
+
+- [Go + MySQL + Nginx 网站部署指南](Go+MySQL+Nginx部署指南.md)：从 Ubuntu 初始化到 Go 编译、Systemd、Nginx 反向代理和 HTTPS 的通用部署步骤。
+- [Go + MySQL + Nginx 第二次部署记录](Go+MySQL+Nginx第二次部署记录.md)：记录重新申请服务器后，第二次从零搭建同一 Go 网站的过程、配置关系、验收清单和复盘。
