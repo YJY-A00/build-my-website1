@@ -1,5 +1,7 @@
 # 网站搭建 Linux 操作记录
 
+> 安全提醒：本文件曾包含数据库密码和固定弱口令示例，当前版本已脱敏。如果这些内容曾提交到远端仓库，应立即轮换相关数据库/管理员凭据，并同步更新服务器配置；只修改当前文件不能清除 Git 历史中的旧内容。
+
 > 本记录整理了从零开始，在 Linux 服务器（Ubuntu 22.04）上搭建 WordPress 网站的过程中执行的所有 Linux 相关操作。
 
 
@@ -60,7 +62,8 @@
 ### 7. 查看宝塔面板信息
 
 - 命令：`bt default`
-- 说明：`bt` 是宝塔面板的命令行管理工具，`default` 参数显示面板登录地址、用户名和密码。
+- 说明：`bt` 是宝塔面板的命令行管理工具，`default` 参数会显示面板登录信息。
+- 安全提醒：该命令输出包含敏感登录信息，不要将终端截图、输出内容或完整面板安全入口提交到公开仓库；如已公开，应更换面板安全入口并限制管理端口来源 IP。
 
 ### 8. 启动/重启宝塔面板
 
@@ -98,13 +101,9 @@ kcompactd0 blocked for more than 120 seconds
 
 ### 11. 查看 WordPress 数据库配置
 
-- 命令：`cat /www/wwwroot/wordpress/wp-config.php | grep DB_`
-- 说明：`cat` 查看文件内容，`|` 管道符将输出传递给 `grep` 进行过滤。
-- 结果：
-define('DB_NAME', 'wordpress');
-define('DB_USER', 'wordpress');
-define('DB_PASSWORD', '175bfccb2d55bf5');
-define('DB_HOST', 'localhost');
+- 命令：`grep -E "DB_NAME|DB_USER|DB_HOST" /www/wwwroot/wordpress/wp-config.php`
+- 说明：只查看数据库名称、用户名和主机字段，避免在终端记录或截图中输出数据库密码。
+- 结果：数据库名称为 `wordpress`、用户名为 `wordpress`、主机为 `localhost`；密码字段已从公开文档中脱敏。
 
 ### 12. 登录 MySQL
 
@@ -120,11 +119,9 @@ SELECT user_login, user_email FROM wp_users;
 说明：USE 切换数据库，SELECT 查询用户表中的登录名和邮箱字段。
 
 14. 重置 WordPress 管理员密码
-- 命令：
-sql
-UPDATE wp_users SET user_pass = MD5('123456') WHERE user_login = 'admin';
-说明：UPDATE 更新数据，SET 设置新值，MD5() 是 MySQL 的加密函数。
-结果：Query OK, 1 row affected，密码已重置为 123456
+- 安全说明：原记录中曾出现固定弱口令和直接使用 MD5 更新密码的示例，现已从公开文档中移除，不再作为操作建议。
+- 建议方式：优先通过 WordPress 后台的密码重置流程，或使用受信任的 WP-CLI 在服务器上设置随机强密码；不要把密码写进命令历史、截图或 GitHub 文档。
+- 凭据处理：如果旧密码曾经提交到远端仓库，应视为已经泄露并立即更换，同时更新实际配置。只修改当前文件不能清除 Git 历史中的旧内容。
 
 15. 退出 MySQL
 - 命令：
@@ -143,11 +140,12 @@ find / -name "wp-config.php" 2>/dev/null
 bash
 /www/wwwroot/wordpress/wp-config.php
 
-17. 查看文件内容
+17. 查看 WordPress 非敏感配置字段
 - 命令：
-bash
-cat /www/wwwroot/wordpress/wp-config.php
-说明：完整查看 WordPress 配置文件内容，确认数据库连接信息。
+```bash
+grep -E "DB_NAME|DB_USER|DB_HOST" /www/wwwroot/wordpress/wp-config.php
+```
+- 说明：只检查数据库名称、用户名和主机，不要使用 `cat wp-config.php` 将包含密码的完整配置输出到终端记录或截图中。
 
 ### 六、服务器状态管理
 18. 查看服务器是否卡死
