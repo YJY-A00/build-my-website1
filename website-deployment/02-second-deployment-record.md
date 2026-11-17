@@ -19,7 +19,7 @@
 | 前端 | HTML / CSS / JavaScript（沿用原项目） |
 | 项目架构 | Nginx + Go + MySQL |
 
-> 版本说明：截图中的 Go 1.23.4 是文档命令所使用的版本示例。若服务器实际安装版本不同，应以 `go version` 输出为准。Ubuntu 的具体版本也请以 `lsb_release -a` 的结果为准。
+> 版本说明：截图中的 Go 1.23.4 是当时文档命令所使用的历史版本示例，不代表当前推荐版本。新部署应先查看 [Go 官方下载页](https://go.dev/dl/) 选择仍受支持、且与项目 `go.mod` 兼容的版本；服务器实际安装版本以 `go version` 输出为准。Ubuntu 的具体版本也请以 `lsb_release -a` 的结果为准。
 
 ## 3. 第二次部署过程
 
@@ -36,16 +36,20 @@ sudo apt update && sudo apt upgrade -y
 # 安装基础工具
 sudo apt install -y curl wget git unzip vim ufw
 
-# 放行 SSH、HTTP、HTTPS 端口
-sudo ufw allow 22    # SSH
-sudo ufw allow 80    # HTTP
-sudo ufw allow 443   # HTTPS
+# 放行 SSH、HTTP、HTTPS 端口（22 必须与 sshd 实际监听端口一致）
+sudo ufw allow 22/tcp    # SSH；若使用非标准端口，改为实际端口
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
 
-# 启用 UFW 防火墙，并按提示确认
+# 启用前检查已添加规则；确认 SSH 规则正确后再启用
+sudo ufw show added
 sudo ufw enable
+
+# 启用后核对生效状态
+sudo ufw status verbose
 ```
 
-启用防火墙前，应确认 SSH 的 22 端口已放行，避免把自己锁在服务器之外。云厂商安全组也需要允许相应入站端口。
+启用防火墙前，应先确认 SSH 实际监听端口，并确保该端口已放行；如果 SSH 使用非标准端口，不能只放行 22。最好保留云厂商 VNC/管理终端作为回退通道。云厂商安全组与 UFW 是两层独立控制，也要分别检查。此架构通常只需对公网开放 SSH、80、443；MySQL 的 3306 和 Go 的 8080 不应为了方便而直接开放。
 
 ### 步骤 1：安装并启动 Nginx
 
@@ -86,7 +90,7 @@ CREATE DATABASE myapp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE USER 'myapp'@'localhost' IDENTIFIED BY '请替换为强密码';
 
-GRANT ALL PRIVILEGES ON myapp.* TO 'myapp'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON myapp.* TO 'myapp'@'localhost';
 
 FLUSH PRIVILEGES;
 
@@ -97,8 +101,9 @@ EXIT;
 
 - `myapp` 是截图中的示例数据库名和应用用户名；如实际项目使用其他名称，应保持 Go 配置与 MySQL 配置一致。
 - 密码必须替换为独立的强密码。**不要把真实密码、可用密码或包含真实凭据的命令提交到 GitHub。**
-- 截图中特别提醒，数据库密码使用纯英文和数字组合，避免特殊字符导致连接字符串解析问题。更稳妥的做法是使用正确转义或参数化的 DSN 配置；不要为了绕开解析问题而降低密码强度。
-- 应用账户使用 `localhost`，体现数据库仅供本机后端连接的配置思路；不要无必要地向公网开放 MySQL 端口。
+- 不要因为担心 DSN 解析而把密码限制为简单字母和数字。go-sql-driver/mysql 文档说明密码可以包含任意字符；如果连接失败，应检查 DSN 的拼接方式、Shell 引号、环境变量读取和实际错误信息，而不是降低密码复杂度。建议从权限受限的环境变量或 Systemd 环境文件读取凭据，不要把密码写入源码、命令历史或 GitHub。
+- 应用账户应只授予业务运行所需权限。上面的 CRUD 权限适合常见读写场景；若应用需要建表或执行数据库迁移，应使用单独的迁移账户，避免长期运行账户拥有 DDL 权限。
+- MySQL 账户的 Host 必须与 Go 的连接方式匹配：若 DSN 通过 Unix Socket 连接，可使用 `'myapp'@'localhost'`；若通过 TCP 连接到 `127.0.0.1:3306`，应按实际情况创建并授权 `'myapp'@'127.0.0.1'`。两种方式都只允许本机访问，不需要开放公网 3306。
 
 ### 步骤 3：安装 Go 后端语言环境
 
@@ -109,8 +114,16 @@ EXIT;
 cd /tmp
 wget https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
 
-# 如果 /usr/local/go 已存在，先确认后再删除旧安装
-sudo rm -rf /usr/local/go
+# 如果 /usr/local/go 已存在，先检查当前 Go 路径和版本
+which go
+go version
+readlink -f "$(command -v go)"
+
+# 只有确认旧安装不再需要、且已做好备份时，才删除旧目录
+# sudo rm -rf /usr/local/go
+
+# 下载后先核对 SHA256：将结果与 Go 官方下载页公布的校验值比较
+sha256sum go1.23.4.linux-amd64.tar.gz
 
 # 解压到 /usr/local
 sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
@@ -151,7 +164,7 @@ ssh root@8.133.191.82 "mkdir -p /opt/myapp"
 再在本地 Windows PowerShell 或其他终端中执行：
 
 ```bash
-scp -r ./你的本地Go项目目录/* root@8.133.191.82:/opt/myapp/
+scp -r ./你的本地Go项目目录/. root@8.133.191.82:/opt/myapp/
 ```
 
 **方式二：通过 Git 克隆**
@@ -173,8 +186,8 @@ cd myapp
 ```bash
 cd /opt/myapp
 
-# 整理并下载项目依赖
-go mod tidy
+# 根据已提交的 go.mod / go.sum 下载依赖
+go mod download
 
 # 编译为 Linux 可执行文件
 go build -o myapp .
@@ -182,15 +195,36 @@ go build -o myapp .
 # 添加可执行权限
 chmod +x myapp
 
-# 按截图将项目目录所有者设置为 www-data
-sudo chown -R www-data:www-data /opt/myapp
+# 建议由 root 管理程序文件，服务账户只获得读取和执行权限
+sudo chown -R root:root /opt/myapp
+sudo chmod 755 /opt/myapp
+sudo chmod 755 /opt/myapp/myapp
 ```
 
-> 编译前应确认服务器 Go 环境与项目依赖兼容，且项目入口包位于当前目录（否则需调整 `go build` 的目标路径）。截图记录了将整个目录交给 `www-data` 的做法；生产环境还应遵循最小权限原则，避免让 Web 服务账户拥有不必要的源码或配置写权限。
+> 编译前应确认服务器 Go 环境与项目依赖兼容，且项目入口包位于当前目录（否则需调整 `go build` 的目标路径）。`go mod tidy` 主要用于整理依赖声明，可能改动 `go.mod` 和 `go.sum`；部署时通常使用已审核并提交的依赖文件执行 `go mod download`，如确需 tidy，应检查差异后再提交。
+>
+> 截图中记录的 `chown -R www-data:www-data /opt/myapp` 不建议直接用于生产环境：Web 服务账户不应拥有源码和可执行文件的写权限。可让程序文件归 root 管理、目录和二进制保持可读/可执行，再由 Systemd 以低权限用户运行。若程序需要写文件，应单独建立数据目录并只授予该目录写权限。
 
 ### 步骤 6：使用 Systemd 管理 Go 后端
 
 截图通过 Systemd 将 Go 程序配置为后台服务，使其能够在系统启动时运行，并在进程异常退出时自动重启。
+
+如果 Go 程序通过环境变量读取数据库连接信息，可在服务器本机创建一个不提交到 Git 的环境文件。下面的变量名只是示例，应与程序实际读取的变量保持一致：
+
+```bash
+sudo install -d -m 0755 /etc/myapp
+sudo touch /etc/myapp/myapp.env
+sudo chown root:root /etc/myapp/myapp.env
+sudo chmod 600 /etc/myapp/myapp.env
+sudoedit /etc/myapp/myapp.env
+```
+
+文件内容示例（不要把真实值写入仓库或截图）：
+
+```ini
+DB_USER=myapp
+DB_PASSWORD=请替换为随机强密码
+```
 
 创建服务文件：
 
@@ -203,14 +237,16 @@ sudo nano /etc/systemd/system/myapp.service
 ```ini
 [Unit]
 Description=Go Web App
-After=network.target mysql.service
+Wants=network-online.target
+After=network-online.target mysql.service
 
 [Service]
 User=www-data
 Group=www-data
 WorkingDirectory=/opt/myapp
+EnvironmentFile=/etc/myapp/myapp.env
 ExecStart=/opt/myapp/myapp
-Restart=always
+Restart=on-failure
 RestartSec=3
 
 [Install]
@@ -239,7 +275,7 @@ sudo systemctl status myapp
 sudo journalctl -u myapp -n 100 --no-pager
 ```
 
-> `After=mysql.service` 只表示启动顺序，不等于数据库连接成功，也不代表应用具备数据库就绪重试能力。实际运行时仍需检查 Go 程序的数据库连接配置、启动日志和接口响应。
+> `After=mysql.service` 只表示启动顺序，不等于数据库已经可以接受连接，也不代表应用具备数据库就绪重试能力。Go 程序应对数据库连接失败进行有限重试或在启动阶段明确报错；还要核对服务用户是否能读取所需配置文件。环境文件应只保留在服务器上并限制权限；如果程序不读取环境变量，应删除 service 文件中的 `EnvironmentFile` 行。
 
 ### 步骤 7：配置 Nginx 静态资源与 API 反向代理
 
@@ -296,13 +332,14 @@ sudo systemctl reload nginx
 
 - `root /var/www/myapp` 是前端静态文件目录，需要先将前端文件部署到该目录；它与后端项目目录 `/opt/myapp` 不同。
 - `proxy_pass` 的端口必须与 Go 程序实际监听端口一致。截图使用的是 `8080`。
+- 当前写法 `proxy_pass http://127.0.0.1:8080;` 没有在端口后添加 URI，通常会把原始请求 URI（包括 `/api/` 前缀）传给 Go；如果后端路由并不包含此前缀，需根据实际路由调整 `proxy_pass` 的尾部斜杠，并用真实 API 路径验证，不能只凭配置语法通过就判断联调成功。
 - Go 后端应监听本机回环地址（例如 `127.0.0.1:8080`），避免在不需要时直接暴露后端端口。
 - `server_name` 应替换为当前真实域名，不要继续沿用已经过期的旧域名。
 - 如果前端不是单页应用，需根据实际路由调整 `try_files` 规则。
 
 ### 步骤 8：绑定新域名并配置 HTTPS
 
-截图给出的前提是：域名已完成 ICP 备案，并且已在 DNS 服务商处添加 A 记录，解析到当前服务器公网 IP。域名和服务器信息应以本次实际使用的为准。
+截图文字将“域名已完成 ICP 备案”作为前提，但当前仓库没有备案状态凭证，因此只能记为截图中的前提，不能据此确认备案已经完成。备案要求应根据服务器接入地、服务内容及主管部门/接入服务商的现行规则核实；DNS 解析和 HTTPS 证书都不能替代备案手续。域名和服务器信息应以本次实际使用的为准。
 
 **第一步：修改 Nginx 域名配置**
 
@@ -319,7 +356,17 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-**第二步：安装 Certbot 和 Nginx 插件**
+**第二步：先检查 DNS，再安装 Certbot 和 Nginx 插件**
+
+确认域名的 A 记录指向本次服务器公网 IP；如果配置了 AAAA 记录，也要确认 IPv6 指向正确。可使用以下命令检查解析结果（没有 `dig` 时需先安装对应 DNS 工具）：
+
+```bash
+dig +short yourdomain.com A
+dig +short www.yourdomain.com A
+dig +short yourdomain.com AAAA
+```
+
+同时确认云安全组和 UFW 允许公网访问 TCP 80、443，且 Nginx 站点配置已通过 `nginx -t`。
 
 ```bash
 sudo apt update
@@ -342,7 +389,12 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
 sudo certbot renew --dry-run
 ```
 
-截图说明 Let's Encrypt 证书有效期为 90 天，Certbot 可通过定时任务自动尝试续期。执行 dry-run 是对续期流程的测试，不等于已经验证未来每次续期都必然成功。
+截图说明 Let's Encrypt 证书有效期为 90 天，Certbot 可通过定时任务自动尝试续期。执行 dry-run 是对续期流程的测试，不等于已经验证未来每次续期都必然成功。可进一步检查当前证书和续期定时器：
+
+```bash
+sudo certbot certificates
+systemctl list-timers --all | grep -i certbot
+```
 
 ## 4. 关键配置关系
 
@@ -399,10 +451,32 @@ Nginx（80 / 443）
 | 域名 | 暑假申请的域名，后来到期 | 重新申请域名，具体信息待补充 |
 | 备案与 HTTPS | 以第一次部署记录为准 | 记录 DNS、Certbot 证书申请与续期测试流程 |
 
-## 7. 本次复盘
+## 7. 文档核对与待验证事项
+
+本次只对仓库中的部署说明、命令顺序和配置关系进行了静态审查，没有连接服务器执行命令。因此，下列项目仍需在实际服务器上核实：
+
+- [ ] Ubuntu 具体版本、MySQL 实际版本和 Go 实际版本。
+- [ ] SSH 实际监听端口，以及 UFW 和云安全组的最终规则。
+- [ ] MySQL 应用账户的 Host 与 Go DSN 连接方式是否匹配。
+- [ ] Go 程序实际监听地址、端口、健康检查接口和数据库重试行为。
+- [ ] Systemd 服务是否真实达到 `active (running)`，重启后能否恢复。
+- [ ] Nginx 静态目录、API URI 转发结果和真实接口响应。
+- [ ] 域名 A/AAAA 解析、备案状态、证书签发和续期测试结果。
+
+以上未打勾项目不能在项目介绍中表述为“已验证”或“部署成功”。
+
+## 8. 本次复盘
 
 第二次部署从一台新的 Ubuntu 服务器开始，重新完成系统更新、基础工具安装、防火墙规则配置，以及 Nginx、MySQL 和 Go 运行环境的准备；随后将 Go 项目部署到服务器，编译为 Linux 可执行文件，并通过 Systemd 管理后端进程；最后使用 Nginx 提供静态资源和 API 反向代理，并通过 Certbot 申请 HTTPS 证书。
 
 这份记录不仅保留了部署命令，也梳理了各组件之间的关系：Nginx 作为统一 Web 入口，Go 负责后端 API 逻辑，MySQL 保存业务数据，Systemd 负责后端进程管理，Certbot 协助管理 HTTPS 证书。
 
 需要说明的是，本文根据操作截图整理，命令和配置中的 IP、域名、路径、用户名、端口均应以实际服务器为准。正式用于项目展示前，还应补充真实的服务状态、接口访问、HTTPS 访问和重启验证结果，避免将操作指南误写成未经验证的上线结论。
+
+
+## 9. 参考资料
+
+- [Ubuntu Server：UFW 防火墙](https://ubuntu.com/server/docs/firewalls/)
+- [Go 官方下载页](https://go.dev/dl/)
+- [go-sql-driver/mysql：DSN 说明](https://github.com/go-sql-driver/mysql#dsn-data-source-name)
+- [Certbot 使用文档](https://eff-certbot.readthedocs.io/en/stable/using.html)
