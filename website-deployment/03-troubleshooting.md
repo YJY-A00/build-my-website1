@@ -55,7 +55,7 @@ EOF
 - **发生阶段：** 第一次部署总结。
 - **问题现象：** 原总结记录数据库密码包含 `@`，Go 数据库连接字符串解析失败。
 - **原总结中的处理：** 当时将密码改为字母和数字组合，并执行权限刷新。
-- **补充说明：** 更稳妥的做法是正确使用数据库驱动支持的 DSN 格式或配置参数，并避免把密码硬编码到源码或公开仓库。不要为了绕过解析问题而降低密码强度。
+- **补充说明：** 不应为了绕过 DSN 问题而把密码改成弱口令。go-sql-driver/mysql 文档说明密码可以包含任意字符；应检查 DSN 生成方式、Shell 引号、环境变量读取和连接参数，不要把密码硬编码到源码或公开仓库。
 - **验证方式：** 使用脱敏配置确认 Go 服务可以连接数据库。
 
 ## 5. Systemd 服务启动失败（status=203/EXEC）
@@ -128,6 +128,81 @@ EOF
 
 ---
 
+## 第二次部署排查清单（诊断建议，非已发生故障记录）
+
+以下项目根据第二次部署所用的 Go、MySQL、Systemd 和 Nginx 配置整理，用于实际出现故障时逐项检查。当前没有证据证明这些问题已经在第二次部署中发生，因此不将它们记作已发生故障。
+
+### 1. Go 服务启动失败或 Systemd 报 203/EXEC
+
+先核对可执行文件路径、权限、CPU 架构和服务配置：
+
+```bash
+ls -l /opt/myapp/myapp
+file /opt/myapp/myapp
+sudo systemd-analyze verify /etc/systemd/system/myapp.service
+sudo journalctl -u myapp -n 100 --no-pager
+```
+
+常见原因包括：`ExecStart` 路径写错、文件不存在、没有执行权限、二进制架构不匹配，或服务用户无法遍历上级目录。修正后执行 `sudo systemctl daemon-reload`，再重启服务并检查日志。
+
+### 2. Nginx 返回 502 Bad Gateway
+
+先确认 Go 服务是否监听在 Nginx 配置的地址和端口：
+
+```bash
+sudo systemctl status myapp
+sudo ss -lntp | grep 8080
+curl -i http://127.0.0.1:8080/实际健康检查路径
+sudo tail -n 100 /var/log/nginx/error.log
+```
+
+重点核对 Go 实际监听地址、端口与 `proxy_pass` 是否一致。若 Go 只监听 `127.0.0.1:8080`，从外部网络无法直接访问 8080 是预期行为，应该通过 Nginx 访问。
+
+### 3. Go 连接 MySQL 失败
+
+检查数据库服务、应用账户和连接方式：
+
+```bash
+sudo systemctl status mysql
+sudo ss -lntp | grep 3306
+mysql --version
+```
+
+若错误为 `Access denied`，核对用户名、密码、数据库名，以及 MySQL 账户的 Host 部分。特别注意：`'myapp'@'localhost'` 与通过 TCP 连接 `127.0.0.1:3306` 的账户匹配可能不同；应让账户 Host 与 Go DSN 的实际连接协议/地址一致。不要为解决本机连接问题而把 3306 暴露到公网。
+
+若错误为连接拒绝，检查 MySQL 是否运行、监听地址是否正确，以及 Go 程序是否在数据库启动后进行重试。日志和配置输出中应对密码脱敏。
+
+### 4. API 路径 404 或请求落入前端页面
+
+检查 Nginx 的 `location /api/` 是否被正确加载，并核对 `proxy_pass` 是否保留或剥离 `/api/` 前缀。当前示例的 `proxy_pass http://127.0.0.1:8080;` 会将原 URI 转发给后端；如果 Go 路由不包含 `/api` 前缀，应按 Nginx URI 替换规则调整配置。修改后执行：
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+同时分别用本机 curl 直连 Go 接口和通过 Nginx 访问同一接口，定位问题发生在哪一层。
+
+### 5. 域名无法访问或 Certbot 申请失败
+
+依次检查域名 A/AAAA 记录、服务器公网 IP、云安全组、UFW、Nginx 监听和域名对应的 `server_name`。HTTP-01 验证通常需要验证方能从公网访问域名的 TCP 80 端口；若 80 端口未开放、DNS 指向错误或请求被其他站点配置接管，证书申请可能失败。
+
+```bash
+sudo ufw status verbose
+sudo ss -lntp | grep -E ':80|:443'
+sudo nginx -t
+sudo certbot certificates
+sudo certbot renew --dry-run
+```
+
+不要仅凭 Certbot 命令执行过就声称证书签发成功；应检查证书列表，并实际通过 HTTPS 请求验证域名和证书。
+
+### 6. 防火墙启用后 SSH 连接不上
+
+先通过云厂商 VNC/管理终端恢复访问，再检查 SSH 实际监听端口、UFW 规则和云安全组。不要默认 SSH 一定使用 22 端口。后续启用 UFW 前，先添加正确的 SSH 允许规则并用 `sudo ufw show added` 检查。
+
+---
+
 ## 后续新增问题
 
-第二次部署遇到新问题时，在这里继续追加，并在标题或“发生阶段”字段中明确标注“第二次部署”。尽量保存脱敏日志和最终验证结果，让每个案例都能说明自己的分析过程。
+第二次部署实际遇到新问题时，在这里继续追加，并在标题或“发生阶段”字段中明确标注“第二次部署”。尽量保存脱敏日志和最终验证结果，让每个案例都能说明自己的分析过程。
