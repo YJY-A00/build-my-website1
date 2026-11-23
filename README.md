@@ -101,3 +101,16 @@ if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_pa
 3. 服务器节点为新加坡，国内访问偶有延迟，后续可考虑迁至香港
 
 > **收获**：明确了后续优化方向，对网站从搭建到上线的完整流程有了整体认知
+
+---
+
+## 📚 另一套部署实践：Go + MySQL + Nginx
+
+本节链接到另一套独立的 Go 网站部署实践记录，与本文前面记录的 **宝塔面板 + Docker + WordPress** 部署路线分开整理，不混用两套环境、配置或故障记录。
+
+- [Go 网站部署文档目录](./website-deployment/README.md)：两次部署复盘、详细过程、架构说明和排查记录的入口。
+- [第二次部署记录](./website-deployment/02-second-deployment-record.md)：开学后重新搭建 Go + MySQL + Nginx 的操作记录。
+- [架构与部署验证说明](./website-deployment/04-architecture-and-deployment.md)：组件职责、配置记录与验证建议。
+- [故障排查记录](./website-deployment/03-troubleshooting.md)：按部署阶段整理的问题和诊断方法。
+
+> Go 部署文档中的配置、命令和验收清单不等于当前服务器状态证明。未完成的验证仍以文档中的待确认项为准。
