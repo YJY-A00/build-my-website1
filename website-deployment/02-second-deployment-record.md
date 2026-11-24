@@ -114,13 +114,14 @@ EXIT;
 cd /tmp
 wget https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
 
-# 如果 /usr/local/go 已存在，先检查当前 Go 路径和版本
+# 如果已有 Go 安装，先核对当前命令、版本和实际安装路径
 which go
 go version
 readlink -f "$(command -v go)"
 
-# 只有确认旧安装不再需要、且已做好备份时，才删除旧目录
-# sudo rm -rf /usr/local/go
+# 若确认 /usr/local/go 是需要替换的旧安装，先备份/移走它，确保备份目标不存在
+# sudo mv /usr/local/go /usr/local/go.backup-$(date +%F)
+# 不要将新压缩包直接解压到已有 /usr/local/go 目录中
 
 # 下载后先核对 SHA256：将结果与 Go 官方下载页公布的校验值比较
 sha256sum go1.23.4.linux-amd64.tar.gz
@@ -525,6 +526,7 @@ sudo systemctl status nginx
 
 - [Ubuntu Server：UFW 防火墙](https://ubuntu.com/server/docs/firewalls/)
 - [Go 官方下载页](https://go.dev/dl/)
+- [Go 官方安装说明](https://go.dev/doc/install)
 - [go-sql-driver/mysql：DSN 说明](https://github.com/go-sql-driver/mysql#dsn-data-source-name)
 - [Certbot 使用文档](https://eff-certbot.readthedocs.io/en/stable/using.html)
 - [MySQL 8.0：mysqldump 备份与恢复](https://dev.mysql.com/doc/refman/8.0/en/using-mysqldump.html)
