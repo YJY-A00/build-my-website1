@@ -249,6 +249,12 @@ ExecStart=/opt/myapp/myapp
 Restart=on-failure
 RestartSec=3
 
+# 可选的基础安全加固；部署前确认程序不依赖受限制的目录
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+
 [Install]
 WantedBy=multi-user.target
 ```
@@ -474,9 +480,52 @@ Nginx（80 / 443）
 需要说明的是，本文根据操作截图整理，命令和配置中的 IP、域名、路径、用户名、端口均应以实际服务器为准。正式用于项目展示前，还应补充真实的服务状态、接口访问、HTTPS 访问和重启验证结果，避免将操作指南误写成未经验证的上线结论。
 
 
-## 9. 参考资料
+## 9. 部署变更前备份与回滚建议（运维参考）
+
+> 以下是通用运维建议，不代表本次部署已执行。数据库备份和环境配置可能包含敏感信息，只能保存在权限受限的位置；建议另存加密副本，不要上传 GitHub。
+
+### 备份数据库
+
+在 Ubuntu 默认的 MySQL root 本地 Socket 认证可用时，可用 root 权限执行备份（如果服务器的认证方式不同，应先核对实际认证配置）：
+
+```bash
+# 创建仅 root 可访问的备份目录
+sudo install -d -m 700 /var/backups/myapp
+
+# 备份 myapp 数据库；InnoDB 表适用单事务备份
+sudo bash -c 'umask 077; mysqldump --single-transaction --routines --triggers --events myapp > /var/backups/myapp/myapp-$(date +%F-%H%M%S).sql'
+
+# 检查备份文件是否生成且大小正常
+sudo ls -lh /var/backups/myapp/
+```
+
+- `--single-transaction` 主要为 InnoDB 表提供一致性快照；非事务型表不能因此保证一致性。
+- 备份文件包含数据库数据，应限制访问、加密并复制到独立存储。仅保存在同一服务器不能防止服务器故障或误删。
+- 备份是否可用，最终应通过隔离环境的恢复测试验证，而不是只检查文件存在。
+
+### 保存应用与配置快照
+
+发布或修改配置前，按实际路径保存旧版 Go 可执行文件、前端静态文件、Nginx 站点配置、Systemd 服务文件及环境文件。环境文件可能包含密码，必须保持严格权限并采用安全存储方式。保留版本和日期，避免直接覆盖唯一备份。
+
+### 回滚思路
+
+1. 确认故障范围，优先回退到已保存的应用二进制文件、前端文件和配置版本。
+2. 回退 Systemd 或 Nginx 配置后，先执行 `sudo systemctl daemon-reload`（涉及 Systemd 时）及 `sudo nginx -t`（涉及 Nginx 时），通过检查后再重启/重载服务。
+3. 验证服务状态、首页和实际 API 路径，检查日志。
+4. 如果发布涉及数据库结构迁移，回退应用代码不一定能兼容新数据库结构。数据库恢复可能覆盖或丢失新数据，应先在隔离环境演练、备份当前数据库，再按经过验证的恢复方案处理，不要直接在生产库执行未经测试的恢复命令。
+
+```bash
+sudo systemctl status myapp
+sudo journalctl -u myapp -n 100 --no-pager
+sudo nginx -t
+sudo systemctl status nginx
+```
+
+## 10. 参考资料
 
 - [Ubuntu Server：UFW 防火墙](https://ubuntu.com/server/docs/firewalls/)
 - [Go 官方下载页](https://go.dev/dl/)
 - [go-sql-driver/mysql：DSN 说明](https://github.com/go-sql-driver/mysql#dsn-data-source-name)
 - [Certbot 使用文档](https://eff-certbot.readthedocs.io/en/stable/using.html)
+- [MySQL 8.0：mysqldump 备份与恢复](https://dev.mysql.com/doc/refman/8.0/en/using-mysqldump.html)
+- [systemd.exec：服务安全限制](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html)
